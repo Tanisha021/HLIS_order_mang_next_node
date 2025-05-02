@@ -7,6 +7,7 @@ const { default: localizify } = require('localizify');
 const validationRules = require('../../../validation_rules');
 const middleware = require("../../../../middleware/validators");
 const { t } = require("localizify");
+const { user_id } = require("../../../../language/en");
 
 
 class User {
@@ -187,6 +188,147 @@ class User {
         if (!valid) return;
         
         const responseData = await userModel.itemFiltering(request_data);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+
+    async getCategoryList(req, res) {
+        try {
+            const responseData = await userModel.getCategoryList();
+    
+            return common.response(res, responseData);
+    
+        } catch (error) {
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+
+    async addToCart(req, res) {
+        let requested_data = req.body;
+        try{
+            const request_data = common.decrypt(requested_data);
+            const rules = validationRules.addToCart;
+
+        let message = {
+            required: req.language.required,
+            'product_id': t('product_id'),
+            'qty': t('qty'),
+        };
+    
+        let keywords = {
+            'product_id': t('product_id'),
+            'qty': t('qty'),
+        };
+
+        const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+        console.log("Valid",valid);
+        if (!valid) return;
+        const user_id = req.owner_id;
+        const responseData = await userModel.addToCart(request_data,user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    async getCartItems(req, res) {
+        try{
+         
+        const user_id = req.owner_id;
+        const responseData = await userModel.getCartItems(user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    
+
+    async placeOrder(req, res) {
+        let requested_data = req.body;
+        try{
+            const request_data = common.decrypt(requested_data);
+            const rules = validationRules.placeOrder;
+
+        let message = {
+            required: req.language.required,
+            integer: t('must_be_integer'),
+            string: t('must_be_string'),
+            in: t('invalid_value_provided'),
+            min: t('minimum_value_required')
+        };
+    
+        let keywords = {
+            'payment_type': t('rest_keywords_payment_type'),
+            'address_id': t('rest_keywords_address_id')
+        };
+
+        const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+        console.log("Valid",valid);
+        if (!valid) return;
+        const user_id = req.owner_id;
+        const responseData = await userModel.placeOrder(request_data,user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    async addDeliveryAddress(req, res) {
+        let requested_data = req.body;
+        try{
+            const request_data = common.decrypt(requested_data);
+            const rules = validationRules.addDeliveryAddress;
+          
+        let message = {
+            required: req.language.required,
+            integer: t('must_be_integer'),
+            string: t('must_be_string'),
+            "address_line": t('address_line'),
+            "city": t('city'),
+            "state": t('state'),
+            "country": t('country'),
+            "pincode": t('pincode'),
+            "min": t('minimum_value_required'),
+            "max": t('maximum_value_required')
+
+        };
+    
+        let keywords = {
+            "address_line": t('address_line'),
+            "city": t('city'),
+            "state": t('state'),
+            "country": t('country'),
+            "pincode": t('pincode'),
+        };
+
+        const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+        console.log("Valid",valid);
+        if (!valid) return;
+        const user_id = req.owner_id;
+        const responseData = await userModel.addDeliveryAddress(request_data,user_id);
         return common.response(res, responseData);
 
         }catch(error){

@@ -33,6 +33,7 @@ class Common {
         const encrypted = this.encrypt(message);
         return res.status(200).send(encrypted);
     }
+    // -------------------------------USER---------------------------------------------
     async checkEmail(email){
         try{
             const [results] = await database.query(`SELECT user_id from tbl_user where email_id = ? and is_active = 1 and is_deleted = 0`, [email]);
@@ -201,47 +202,135 @@ left join tbl_device_info AS d ON u.user_id = d.user_id WHERE u.user_id = ? AND 
     }
 
 
+    async check_cart_item(prod_id, user_id){
+        try{
+            const [cart_data] = await database.query(`SELECT cart_id, product_id, qty from tbl_cart where product_id = ? and user_id = ?`, [prod_id, user_id]);
 
-    async get_blog_by_id(blog_id) {
-        try {
-            const getBlogQuery = `SELECT b.blog_id, b.title, b.content, b.status, b.created_at, t.tag_name 
-                              FROM tbl_blog AS b
-                              INNER JOIN tbl_rel_blog_tags rbt ON b.blog_id = rbt.blog_id
-                              INNER JOIN tbl_tags AS t ON t.tag_id = rbt.tag_id
-                              WHERE b.blog_id = ? AND b.is_delete = 0`;
-
-            const [blogData] = await database.query(getBlogQuery, [blog_id]);
-
-            if (blogData.length === 0) {
-                return {
-                    code: response_code.NOT_FOUND,
-                    message: t('task_not_found'),
-                    data: null
-                };
+            if(cart_data && cart_data.length > 0 && Array.isArray(cart_data)){
+                return cart_data[0];
+            } else{
+                return false;
             }
-
-            const blog = {
-                blog_id: blogData[0].blog_id,
-                title: blogData[0].title,
-                content: blogData[0].content,
-                status: blogData[0].status,
-                created_at: blogData[0].created_at,
-                tags: blogData.map(row => row.tag_name)
-            };
-
-            return {
-                code: response_code.SUCCESS,
-                message: t('task_found_successfully'),
-                data: blog
-            };
-        } catch (error) {
-            return {
-                code: response_code.OPERATION_FAILED,
-                message: t('some_error_occurred'),
-                data: error.message
-            };
+        } catch(error){
+            console.log(error.message);
+            return false;
         }
-    };
+    }
+
+    async update_cart(data){
+        try{
+            const [resp] = await database.query(`UPDATE tbl_cart SET qty = ? where user_id = ? and product_id = ?`, [data.qty, data.user_id, data.product_id]);
+
+            return resp.affectedRows > 0;
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
+
+    async get_cart_items(user_id){
+        try{
+            const [res] = await database.query(`select user_id, product_id, qty, cart_id from tbl_cart where user_id = ?`, [user_id]);
+            if(res && res.length > 0 && Array.isArray(res)){
+                return res;
+            } else{
+                return false
+            }
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
+
+    async insert_into_order(data){
+        try{
+            const [rows] = await database.query(`INSERT INTO tbl_order_details SET ? `, [data]);
+            return rows.affectedRows > 0;
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
+
+    generateOrderNum(length){
+        if(length <= 0){
+            throw new Error("Order Number length must be greater than 0");
+        }
+        const digits = '0123456789QWERTYUIOPASDFGHJKLZXCVBNM';
+        let otp = '';
+        for (let i = 0; i < length; i++) {
+            otp += digits[Math.floor(Math.random() * digits.length)];
+        }
+        return otp;
+    }
+
+    async update_order(data,order_id){
+        try{
+            const [rows] = await database.query(`UPDATE tbl_order SET ? where order_id=?`, [data,order_id]);            
+            return rows.affectedRows > 0;
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
+    // -------------------ADMIN-----------------------------------------------
+    async checkEmailAdmin(email){
+        try{
+            const [results] = await database.query(`SELECT admin_id from tbl_admin where email_id = ? and is_active = 1 and is_deleted = 0`, [email]);
+            console.log("results",results)
+            if(results && Array.isArray(results) && results.length > 0 && results[0] !== null && results[0].user_id){
+                return false;
+            } else {
+                return true;
+            }
+        } catch(error){
+            console.log(error.message);
+            return false
+        }
+    }
+
+    async getAdmin(data) {
+        try {
+            let sql = `SELECT admin_id, email_id, password_, is_active FROM tbl_admin WHERE ${data} AND is_active = 1 AND is_deleted = 0 ORDER BY admin_id DESC`;
+            console.log("sqlll",sql)
+            const res = await database.query(sql);
+            if (res[0].length > 0) {
+                return res[0][0]; 
+            } else {
+                return false;
+            }
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
+    }
+
+    async updateAdminData(admin_id, data) {
+        try {
+            console.log("updateUserData called with:", { admin_id, data });
+            
+            let sql = `UPDATE tbl_admin SET ? WHERE admin_id = ?`;
+            const [result] = await database.query(sql, [data, admin_id]);
+
+            console.log("SQL update result:", result);
+            return result.affectedRows > 0;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async getAdminInfo(admin_id) {
+        try {
+            let sql = `SELECT admin_id, full_name, email_id FROM tbl_admin admin_id = ? AND is_active = 1 AND is_deleted = 0 ;`;
+    
+            const [res] = await database.query(sql, [admin_id]);
+            return res[0];
+        } catch (error) {
+            return false;
+        }
+    }
+
+
     async sendMail(subject, to_email, htmlContent) {
         try {
             if (!to_email || to_email.trim() === "") {

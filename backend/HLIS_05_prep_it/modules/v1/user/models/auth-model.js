@@ -218,6 +218,7 @@ class UserModel {
                         data: null
                     };
                 }
+                
             if (bcrypt.compareSync(request_data.password_, userDetails.password_)) {
                 if (userDetails.is_active == 1) {
         

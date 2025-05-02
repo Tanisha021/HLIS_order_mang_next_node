@@ -133,130 +133,268 @@ class UserModel {
         }
     }
     
-
+    async getCategoryList() {
+        try {
+            const getCategorysQuery = `
+                select category_name from tbl_category;`;
     
-    // async createBlog(request_data) {
-    //     try {
-    //         const { title, content, tag_id } = request_data;
-
-    //         const blogData = {title,content}
-    //         const insertBlogQuery = `insert into tbl_blog set ?`
-    //         const [blogResult] = await database.query(insertBlogQuery, [blogData]);
-    //         const blog_id = blogResult.insertId;
-
-    //         if(Array.isArray(tag_id) && tag_id.length > 0) {
-    //             const insertTagsQuery = `insert into tbl_rel_blog_tags (blog_id, tag_id) values ?`;
-
-    //             const tagValues = tag_id.map(tag => [blog_id, tag]);
-    //             await database.query(insertTagsQuery, [tagValues]);
-    //         }
-
-    //         return{
-    //             code: response_code.SUCCESS,
-    //             message: t('task_created_successfully'),
-    //             data: { blog_id, title, content, tag_ids: tag_id || [] }
-    //         }
-
-    //     } catch (error) {
-    //         return {
-    //             code: response_code.OPERATION_FAILED,
-    //             message: t('some_error_occurred'),
-    //             data: error.message
-    //         };
-    //     }
-    // }
-
-    // async deleteBlog(request_data) {
-    //     try {
-    //         const { blog_id } = request_data;
-    //         const deleteBlogQuery = `Update tbl_blog set is_delete=1 WHERE blog_id = ?`;
-    //         const [result] = await database.query(deleteBlogQuery, [blog_id]);
-
-    //         if (result.affectedRows === 0) {
-    //             return {
-    //                 code: response_code.NOT_FOUND,
-    //                 message: t('task_not_found')
-    //             };
-    //         }
-
-    //         return {
-    //             code: response_code.SUCCESS,
-    //             message: t('task_deleted_successfully'),
-    //             data:blog_id
-    //         };
-    //     } catch (error) {
-    //         return {
-    //             code: response_code.OPERATION_FAILED,
-    //             message: t('some_error_occurred'),
-    //             data: error.message
-    //         };
-    //     }
-    // }
-
-    // async updateBlog(request_data,id) {
-    //     const blog_id = id;
-    //     try {
-    //         const { content, title, status } = request_data;
-    //         console.log("request_data",typeof request_data)
-
-    //         console.log("title", request_data.title)
-    //         console.log("content",content)
-    //         console.log("status",status)
-
-    //         if(!blog_id) {
-    //             return {
-    //                 code: response_code.BAD_REQUEST,
-    //                 message: t('blog_id_required')
-    //             };
-    //         }
-    //         const blogData = await common.get_blog_by_id(blog_id);
-    //         console.log("blogData1",blogData);
-    //         if (blogData.code !== response_code.SUCCESS || !blogData.data) {
-    //             return {
-    //                 code: response_code.NOT_FOUND,
-    //                 message: t('blog_not_found_or_deleted'),
-    //                 data: null
-    //             };
-    //         }
-
-    //         const update_data = {};
-
-    //         if(title){
-    //             update_data.title = title;
-    //         }
-    //         if(content){
-    //             update_data.content = content;
-    //         }
-    //         if (status !== undefined && status !== null) { 
-    //             update_data.status = status;
-    //         }
-    //         console.log("update_data",update_data)
-    //         if(Object.keys(update_data).length === 0) {
-    //             return {
-    //                 code: response_code.BAD_REQUEST,
-    //                 message: t('no_update_data_provided')
-    //             };
-    //         }
-
-    //         await database.query('UPDATE tbl_blog SET ? WHERE blog_id = ?', [update_data, blog_id]);
-
-    //         return {
-    //             code: response_code.SUCCESS,
-    //             message: t('task_updated_successfully'),
-    //             data: { blog_id, ...update_data }
-    //         };
-    //     } catch (error) {
-    //         console.error("Error in updateBlog:", error);
-    //         return {
-    //             code: response_code.OPERATION_FAILED,
-    //             message: t('some_error_occurred'),
-    //             data: error.message
-    //         };
-    //     }
-    // }
-
-   
+            const [categories] = await database.query(getCategorysQuery);
     
+            if (categories.length === 0) {
+                return {
+                    code: response_code.NOT_FOUND,
+                    message: t('no_category_found')
+                };
+            }
+            
+            return {
+                code: response_code.SUCCESS,
+                message: t('category_listed_successfully'),
+                data: categories
+            };
+        } catch (error) {
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('some_error_occurred'),
+                data: error.message
+            };
+        }
+    }
 
+
+    async addToCart(request_data, user_id) {
+        console.log("ehllo pogie",request_data.product_id, request_data.qty, user_id);
+        try{
+            if (!request_data.product_id || request_data.qty<=0) {
+                console.log("here")
+                return {
+                    code: response_code.BAD_REQUEST,
+                    message: t('product_id_and_qty_required')
+                };
+            }else{
+                const checkCart = await common.check_cart_item(request_data.product_id, user_id);
+                if(checkCart){
+                    const data = {
+                        qty: request_data.qty,
+                        user_id: user_id,
+                        product_id: request_data.product_id
+                    }
+                    const updateCart = await common.update_cart(data);
+                    if(updateCart){
+                        return {
+                            code: response_code.SUCCESS,
+                            message: t('cart_updated_successfully'),
+                            data: request_data.product_id
+                        };
+                    }else{
+                        return {
+                            code: response_code.OPERATION_FAILED,
+                            message: t('cart_update_failed'),
+                            data: null
+                        };
+                    }
+                }else{
+                    const data = {
+                        user_id: user_id,
+                        product_id: request_data.product_id,
+                        qty: request_data.qty
+                    }
+                    const [result] = await database.query("INSERT INTO tbl_cart SET ?", data);
+                    if(result.affectedRows > 0){
+                        return {
+                            code: response_code.SUCCESS,
+                            message: t('product_added_to_cart'),
+                            data: request_data.product_id
+                        };
+                }else{
+                    return {
+                        code: response_code.OPERATION_FAILED,
+                        message: t('product_add_to_cart_failed'),
+                        data: null
+                    };
+                }
+            }
+
+        }
+    }catch (error) {
+        console.log(error);
+        return {
+            code: response_code.OPERATION_FAILED,
+            message: t('some_error_occurred'),
+            data: error.message
+        };
+    }
+    
+    }
+
+    async getCartItems(user_id) {
+        try {
+            const getCartQuery = `
+                SELECT c.cart_id, p.product_id, p.product_name, p.product_price, c.qty,
+                (c.qty * p.product_price) AS total_price
+                FROM tbl_cart c
+                LEFT JOIN tbl_products p ON c.product_id = p.product_id
+                WHERE c.user_id = ?;
+            `;
+    
+            const [cartItems] = await database.query(getCartQuery, [user_id]);
+    
+            if (cartItems.length === 0) {
+                return {
+                    code: response_code.NOT_FOUND,
+                    message: t('no_cart_items_found')
+                };
+            }
+    
+            return {
+                code: response_code.SUCCESS,
+                message: t('cart_items_found_successfully'),
+                data: cartItems
+            };
+        } catch (error) {
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('some_error_occurred'),
+                data: error.message
+            };
+        }
+    }
+
+    async placeOrder(request_data, user_id) {
+        try{
+            const cart_data = await common.get_cart_items(user_id);
+            let sub_total = 0;
+
+            if(cart_data){
+                const order_num = common.generateOrderNum(8);
+                console.log(order_num)
+                const order_data={
+                    order_num: order_num,
+                    user_id: user_id,
+                    status:'pending'
+                }
+                const [result_order] = await database.query(`INSERT INTO tbl_order SET ?`, [order_data]);
+                 if(result_order.affectedRows > 0){
+                    const order_id = result_order.insertId;
+                    for(const prod of cart_data){
+                        const [price] = await database.query(`SELECT product_price FROM tbl_products WHERE product_id = ?`, [prod.product_id]);
+                        if(!price || price.length === 0){
+                            return {
+                                code: response_code.NOT_FOUND,
+                                message: t('product_not_found'),
+                                data: null
+                            };
+                        }
+
+                        const cost = price[0].product_price * prod.qty;
+                        console.log("cost", cost)
+                        sub_total += cost;
+                        console.log("subtaotal", cost, sub_total)
+                        const order_details_data = {
+                            order_id: order_id,
+                            product_id: prod.product_id,
+                            qty: prod.qty,
+                            price: cost
+                        }
+                        const order_details = await common.insert_into_order(order_details_data);
+
+                        if(order_details){
+                            const shipping_charge = 100;
+                            const grand_total = sub_total + shipping_charge;
+
+                            const data_to_update={
+                                status: 'confirmed',
+                                sub_total: sub_total,
+                                grand_total: grand_total,
+                                shipping_charge: shipping_charge,
+                                payment_type: request_data.payment_type,
+                                address_id: request_data.address_id,
+                            }
+                            const resp_order_update = await common.update_order(data_to_update,order_id);
+                            if(resp_order_update){
+                                await database.query(`DELETE FROM tbl_cart WHERE user_id = ?`, [user_id]);
+                                return {
+                                    code: response_code.SUCCESS,
+                                    message: t('order_placed_successfully'),
+                                    data: {
+                                        order_id,
+                                        order_num,
+                                        grand_total
+                                    }
+                                };
+                            }else{
+                                return {
+                                    code: response_code.OPERATION_FAILED,
+                                    message: t('error_updating_order'),
+                                    data: null
+                                }
+                            }
+                    }else{
+                        return {
+                            code: response_code.OPERATION_FAILED,
+                            message: t('error_adding_order_details'),
+                            data: null
+                        }
+                    }
+
+                 }
+            }else{
+                return {
+                    code: response_code.OPERATION_FAILED,
+                    message: t('error_adding_order_data'),
+                    data: null
+                }
+            }
+
+        }else{
+            return {
+                code: response_code.NOT_FOUND,
+                message: t("no_data_provided_to_place_order"),
+                data: null
+            }
+        }
+    }catch(error) {
+        console.log(error);
+        return {
+            code: response_code.OPERATION_FAILED,
+            message: t('some_error_occurred'),
+            data: error.message
+        };
+    }
+    }
+
+    async addDeliveryAddress(request_data, user_id) {
+        try{
+            const data = {
+                user_id: user_id,
+                address_line: request_data.address_line,
+                city: request_data.city,
+                state: request_data.state,
+                country: request_data.country,
+                pincode: request_data.pincode
+            }
+            const [result] = await database.query(`INSERT INTO tbl_user_delivery_address SET ?`, [data]);
+            if(result.affectedRows > 0){
+                return {
+                    code: response_code.SUCCESS,
+                    message: t('address_added_successfully'),
+                    data: null
+                };
+            }else{
+                return {
+                    code: response_code.OPERATION_FAILED,
+                    message: t('address_add_failed'),
+                    data: null
+                };
+            }
+        }catch(error) {
+            console.log(error);
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('some_error_occurred'),
+                data: error.message
+            };
+        }
+    }
 }
 module.exports = new UserModel();

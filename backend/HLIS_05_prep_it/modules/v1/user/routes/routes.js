@@ -7,9 +7,14 @@ const customerRoute = (app) => {
     app.post("/v1/user/login", User.login);
     app.post("/v1/user/logout", User.logout);
 
-    app.post("/v1/user/get-products-list", User.getProductsList);
+    app.get("/v1/user/get-products-list", User.getProductsList);
     app.post("/v1/user/get-product-details/:id", User.getProductById);
     app.post("/v1/user/products-filter", User.itemFiltering);
+    app.get("/v1/user/get-category-list", User.getCategoryList);
+    app.post("/v1/user/add-to-cart", User.addToCart);
+    app.get("/v1/user/get-cart-items", User.getCartItems);
+    app.post("/v1/user/place-order", User.placeOrder);
+    app.post("/v1/user/add-delivery-address", User.addDeliveryAddress);
 
 
     // app.post("/v1/user/show-all-blogs", User.showAllBlogs);
