@@ -47,6 +47,20 @@ class Common {
             return false
         }
     }
+    async check_user_login(email){
+        try{
+            const [results] = await database.query(`SELECT user_id from tbl_user where email_id = ? and is_active = 1 and is_deleted = 0 and is_login = 1`, [email]);
+            if(results && Array.isArray(results) && results.length > 0 && results[0] !== null && results[0].user_id){
+                return true;
+            } else {
+                return false;
+            }
+        } catch(error){
+            console.log(error.message);
+            return false
+        }
+    }
+    
 
     async insertDevice(deviceData) {
         try{
@@ -63,8 +77,10 @@ class Common {
 left join tbl_device_info AS d ON u.user_id = d.user_id WHERE u.user_id = ? AND u.is_active = 1 AND u.is_deleted = 0 ;`;
     
             const [res] = await database.query(sql, [user_id]);
+            console.log("user_info",res[0])
             return res[0];
         } catch (error) {
+            console.log(error);
             return false;
         }
     }
@@ -273,6 +289,26 @@ left join tbl_device_info AS d ON u.user_id = d.user_id WHERE u.user_id = ? AND 
             return false;
         }
     }
+
+    async get_order_details(user_id){
+        try{
+            const [result] = await database.query(`select o.order_id, o.order_num, o.sub_total, 
+            o.shipping_charge, o.grand_total, 
+            o.status, o.payment_type, 
+            a.address_line, a.city, a.state, a.pincode, a.country
+            from tbl_order o inner join tbl_user_delivery_address a on a.address_id = o.address_id where o.user_id = ?;`, [user_id]);
+
+            if(result && Array.isArray(result) && result.length > 0){
+                return result;
+            } else{
+                return false;
+            }
+
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
     // -------------------ADMIN-----------------------------------------------
     async checkEmailAdmin(email){
         try{
@@ -330,6 +366,33 @@ left join tbl_device_info AS d ON u.user_id = d.user_id WHERE u.user_id = ? AND 
         }
     }
 
+    async get_products_info(product_id){
+        try{
+            const [data] = await database.query(`SELECT product_id, product_name, product_description, product_price from tbl_products where product_id = ? and is_deleted = 0`, [product_id]);
+            if(data && Array.isArray(data) && data.length > 0){
+                return data[0];
+            } else{
+                return false;
+            }
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
+
+    async get_order_by_id(order_id){
+        try{
+            const [orders] = await database.query(`SELECT order_id, order_num, status, grand_total from tbl_order where order_id = ?`, [order_id]);
+            if(orders && orders.length > 0){
+                return orders[0];
+            } else{
+                return false;
+            }
+        } catch(error){
+            console.log(error.message);
+            return false;
+        }
+    }
 
     async sendMail(subject, to_email, htmlContent) {
         try {

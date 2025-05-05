@@ -117,13 +117,9 @@ class User {
     }
     async logout(req, res) {
         try {
-            const requested_data = req.body;
-            const request_data = requested_data && Object.keys(requested_data).length > 0 
-                ? common.decrypt(requested_data) 
-                : {};
-    
             const user_id = req.owner_id;
-            const responseData = await authModel.logout(request_data, user_id);
+            console.log("User ID in controller:", user_id);
+            const responseData = await authModel.logout(user_id);
     
             return common.response(res, responseData);
         } catch (error) {
@@ -170,7 +166,7 @@ class User {
         }
     }
 
-    async itemFiltering(req, res) {
+    async itemFiltering(req, res) {    
         let requested_data = req.body;
         try{
             const request_data = common.decrypt(requested_data);
@@ -181,7 +177,7 @@ class User {
         };
     
         let keywords = {
-        };
+        }; 
 
         const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
         console.log("Valid",valid);
@@ -329,6 +325,66 @@ class User {
         if (!valid) return;
         const user_id = req.owner_id;
         const responseData = await userModel.addDeliveryAddress(request_data,user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    async getUserInfo(req, res) {
+        try{
+        const user_id = req.owner_id;
+        const responseData = await userModel.getUserInfo(user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    async get_delivery_address(req, res) {
+        try{
+        const user_id = req.owner_id;
+        const responseData = await userModel.get_delivery_address(user_id);
+        return common.response(res, responseData);
+
+        }catch(error){
+            console.error("Error in signup:", error);
+            return common.response(res, {
+                code: response_code.OPERATION_FAILED,
+                message: t('rest_keywords_something_went_wrong') + error
+            });
+        }
+    }
+    async updateProfile(req, res) {
+        let requested_data = req.body;
+        try{
+            const request_data = common.decrypt(requested_data);
+            const rules = validationRules.updateProfile;
+          
+        let message = {
+            required: req.language.required,
+            string: t('must_be_string')
+        };
+    
+        let keywords = {
+            'full_name': t('rest_keywords_full_name'),
+            'about': t('rest_keywords_about'),
+            'profile_pic': t('rest_keywords_profile_pic')
+        };
+
+        const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+        console.log("Valid",valid);
+        if (!valid) return;
+        const user_id = req.owner_id;
+        const responseData = await userModel.updateProfile(request_data,user_id);
         return common.response(res, responseData);
 
         }catch(error){

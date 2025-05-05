@@ -114,10 +114,10 @@ class headerAuth {
         console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
         try {
             const decode = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("decode", decode)
+            console.log("decode-jwt token", decode)
             return decode;
         } catch (error) {
-            console.log(error.message);
+            console.log("ee",error.message);
             throw new Error("Invalid or Expired JWT Token");
         }
     }
@@ -160,10 +160,11 @@ class headerAuth {
                     const headerObj = new headerAuth();
                     const decoded = await headerObj.getUserFromToken(token);
                     console.log(decoded)
+                    console.log("decoded", decoded.id);
                     if (req.requestedModule === 'admin') {
-                        req.owner_id = decoded.admin_id
+                        req.owner_id = decoded.id
                     } else {
-                        req.owner_id = decoded.user_id;
+                        req.owner_id = decoded.id;
                     }
                     req.owner = decoded;
                     next();

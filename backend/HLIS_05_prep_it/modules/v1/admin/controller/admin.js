@@ -81,82 +81,142 @@ class Admin {
           }
       }
 
-    async add_item_by_admin(req, res) {
-        // { "item_name": "Grilled Chicken", "kcal": 350, "carbs": 10, "protein": 40, "fat": 15, "desc_": "Delicious grilled chicken", "image_id": 3, "ingredient_ids": [1, 3, 2] }
-        try {
+      async editProduct(req, res) {
+          let requested_data = req.body;
+          try{
+              const request_data = common.decrypt(requested_data);
+              const rules = validationRules.editProduct;
+  
+          let message = {
+              required: req.language.required,
+              string: t('must_be_string'),
+              numeric: t('must_be_numeric')
+          };
+      
+          let keywords = {
+                'product_name': t('rest_keywords_product_name'),
+                'product_price': t('rest_keywords_product_price'),
+                'product_description': t('rest_keywords_product_description')
+          };
+  
+          const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+          console.log("Valid",valid);
+          if (!valid) return;
+          
+          const responseData = await adminModel.editProduct(request_data);
+          return common.response(res, responseData);
+  
+          }catch(error){
+              console.error("Error in signup:", error);
+              return common.response(res, {
+                  code: response_code.OPERATION_FAILED,
+                  message: t('rest_keywords_something_went_wrong') + error
+              });
+          }
+      }
+      async deleteProduct(req, res) {
+          let requested_data = req.body;
+          try{
+              const request_data = common.decrypt(requested_data);
+              const rules = validationRules.deleteProduct;
+  
+          let message = {
+              required: req.language.required,
+                integer: t('must_be_integer')
 
-            let request_data = common.decryptPlain(req.body);
+          };
+      
+          let keywords = {
+              "product_id": t('rest_keywords_product_id')
+          };
+  
+          const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+          console.log("Valid",valid);
+          if (!valid) return;
+          
+          const responseData = await adminModel.deleteProduct(request_data);
+          return common.response(res, responseData);
+  
+          }catch(error){
+              console.error("Error in signup:", error);
+              return common.response(res, {
+                  code: response_code.OPERATION_FAILED,
+                  message: t('rest_keywords_something_went_wrong') + error
+              });
+          }
+      }
+
+          async productListing(req, res) {
+            let requested_data = req.body;
+            try{
+                const request_data = common.decrypt(requested_data);
+                  const responseData = await adminModel.productListing(request_data);
+          
+                  return common.response(res, responseData);
+          
+              } catch (error) {
+                  return common.response(res, {
+                      code: response_code.OPERATION_FAILED,
+                      message: t('rest_keywords_something_went_wrong') + error
+                  });
+              }
+          }
+          async showOrders(req, res) {
+            let requested_data = req.body;
+            try { 
+                const request_data = common.decrypt(requested_data);
+                const rules = validationRules.showOrders
     
-            if (typeof request_data === "string") {
-                request_data = JSON.parse(request_data);
+                const valid = middleware.checkValidationRules(req, res, request_data, rules)
+                if (!valid) return;
+                const responseData = await adminModel.showOrders(request_data);
+                return common.response(res, responseData);
+    
+            } catch (error) {
+                return common.response(res, {
+                    code: response_code.OPERATION_FAILED,
+                    message: t('rest_keywords_something_went_wrong') + error
+                });
             }
-    
-            console.log("Decrypted Request Data:", request_data);
-    
-            const rules = validationRules.add_item_by_admin;
+        }
+
+        async updateStatus(req, res) {
+            let requested_data = req.body;
+            try{
+                const request_data = common.decrypt(requested_data);
+                const rules = validationRules.updateStatus;
     
             let message = {
                 required: req.language.required,
-                item_name: t('item_name'),
-                kcal: t('kcal'),
-                carbs: t('carbs'),
-                protein: t('protein'),
-                fat: t('fat'),
-                desc_: t('desc_'),
-                image_id: t('image_id'),
-                ingredient_id: t('ingredient_ids')
+                numeric: t('must_be_numeric'),
+                string: t('must_be_string'),
+                in: t('invalid_value_provided')
+  
+            };
+        
+            let keywords = {
+                'order_id': t('rest_keywords_product_id'),
+                'status': t('rest_keywords_status')
             };
     
-            let keywords = { ...message };
-    
-            const valid = middleware.checkValidationRules(req, res, request_data, rules, message, keywords);
-            console.log("Valid:", valid);
+            const valid = middleware.checkValidationRules(req,res,request_data,rules,message, keywords)
+            console.log("Valid",valid);
             if (!valid) return;
-    
-            const responseData = await adminModel.add_item_by_admin(request_data, req.admin_id);
-    
+            
+            const responseData = await adminModel.updateStatus(request_data);
             return common.response(res, responseData);
     
-        } catch (error) {
-            console.log("Error in add_item_by_admin", error);
-            return common.response(res, {
-                code: response_code.OPERATION_FAILED,
-                message: t('rest_keywords_something_went_wrong') + error
-            });
+            }catch(error){
+                console.error("Error in signup:", error);
+                return common.response(res, {
+                    code: response_code.OPERATION_FAILED,
+                    message: t('rest_keywords_something_went_wrong') + error
+                });
+            }
         }
-    }
-    async delete_item(req, res) {
-        try {
 
-            const request_data = JSON.parse(common.decryptPlain(req.body));
-                        // console.log(req.body);
-                        const rules = validationRules.getItemDetails;
-            
-                        let message={
-                            required: req.language.required,
-                            item_id: t('item_id'),      
-                        }
-            
-                        let keywords={
-                            item_id: t('item_id')
-                        }
     
-            const valid = middleware.checkValidationRules(req, res, request_data, rules, message, keywords);
-            console.log("Valid:", valid);
-            if (!valid) return;
-    
-            const responseData = await adminModel.delete_item(request_data, req.admin_id);
-    
-            return common.response(res, responseData);
-    
-        } catch (error) {
-            console.log("Error in add_item_by_admin", error);
-            return common.response(res, {
-                code: response_code.OPERATION_FAILED,
-                message: t('rest_keywords_something_went_wrong') + error
-            });
-        }
-    }
+
 
 
 };

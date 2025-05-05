@@ -29,6 +29,11 @@ const checkValidatorRules = {
         country: "required|string",
         pincode: "required|string|min:6|max:6",
     },
+    updateProfile: {
+        full_name: "string",
+        profile_pic: "string",
+        about: "string"
+    },
 
     // ---------------ADMIN VALIDATION RULES------------------
     login_admin:{
@@ -40,7 +45,21 @@ const checkValidatorRules = {
         product_price: "required|integer",
         product_description: "required|string",
         category_id: "required|integer",
-    }
+    },
+    editProduct:{
+        product_id: "required|integer",
+        product_name: "string",
+        product_price: "numeric",
+        product_description: "string",
+    },
+    deleteProduct:{
+        product_id: "required|integer",
+    },
+    updateStatus:{
+        order_id: "required|integer",
+        status: "required|string|in:pending,confirmed,shipped,completed,failed",
+    },
+
 
     
 };

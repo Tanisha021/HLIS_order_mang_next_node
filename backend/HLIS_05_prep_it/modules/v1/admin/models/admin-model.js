@@ -43,8 +43,9 @@ class AdminModel {
                            if (userDetails.is_active == 1) {
                    
                                const user_token = jwt.sign(
-                                   { id: userDetails.id },
+                                   { id: userDetails.admin_id },
                                    process.env.JWT_SECRET,
+
                                    { expiresIn: '1d' }
                                );
                                
@@ -56,7 +57,7 @@ class AdminModel {
                                
                                await common.updateAdminData(userDetails.admin_id, updateData);
                                let userInfo = await common.getUserInfo(userDetails.admin_id);
-                               
+                            
                                const responseData = {
                                    userInfo: userInfo,
                                    user_token: user_token
@@ -142,97 +143,223 @@ class AdminModel {
             };
         }
     }
-    
-    
 
-    // async deleteBlog(request_data) {
-    //     try {
-    //         const { blog_id } = request_data;
-    //         const deleteBlogQuery = `Update tbl_blog set is_delete=1 WHERE blog_id = ?`;
-    //         const [result] = await database.query(deleteBlogQuery, [blog_id]);
+    async editProduct(request_data) {
+        try {
+            if(!request_data.product_id) {
+                return {
+                    code: response_code.BAD_REQUEST,
+                    message: t('product_id_required'),
+                    data: null
+                }
+            }
+            const updated_fields = {};
+            if (request_data.product_name) {
+                updated_fields.product_name = request_data.product_name;
+            }
+            if (request_data.product_price) {
+                updated_fields.product_price = request_data.product_price;
+            }
+            if (request_data.product_description) {
+                updated_fields.product_description = request_data.product_description;
+            }
 
-    //         if (result.affectedRows === 0) {
-    //             return {
-    //                 code: response_code.NOT_FOUND,
-    //                 message: t('task_not_found')
-    //             };
-    //         }
+            if (Object.keys(updated_fields).length === 0) {
+                return {
+                    code: response_code.OPERATION_FAILED,
+                    message: t("no_data_provided_for_update"),
+                    data: null
+                }
+            } else {
+                const [upated_prods] = await database.query(`UPDATE tbl_products SET ? where product_id = ?`, [updated_fields, request_data.product_id]);
 
-    //         return {
-    //             code: response_code.SUCCESS,
-    //             message: t('task_deleted_successfully'),
-    //             data:blog_id
-    //         };
-    //     } catch (error) {
-    //         return {
-    //             code: response_code.OPERATION_FAILED,
-    //             message: t('some_error_occurred'),
-    //             data: error.message
-    //         };
-    //     }
-    // }
+                if (upated_prods.affectedRows > 0) {
+                    return {
+                        code: response_code.SUCCESS,
+                        message: t('update_product_success'),
+                        data: { product_id: request_data.product_id }
+                    }
+                } else {
+                    return {
+                        code: response_code.OPERATION_FAILED,
+                        message: t('update_product_failed'),
+                        data: null
+                    }
+                }
+            }
 
-    // async updateBlog(request_data,id) {
-    //     const blog_id = id;
-    //     try {
-    //         const { content, title, status } = request_data;
-    //         console.log("request_data",typeof request_data)
+        } catch (error) {
+            console.log(error.message);
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('internal_server_error'),
+                data: null
+            }
+        }
+    }
 
-    //         console.log("title", request_data.title)
-    //         console.log("content",content)
-    //         console.log("status",status)
+    async productListing() {
+        try {
+            const [products] = await database.query(`SELECT p.product_id, p.product_name, p.product_price, pi.image_name,c.category_name FROM tbl_products p left JOIN tbl_product_images pi ON p.product_id = pi.product_id left join tbl_category c on c.category_id = p.category_id where p.is_deleted = 0;`);
 
-    //         if(!blog_id) {
-    //             return {
-    //                 code: response_code.BAD_REQUEST,
-    //                 message: t('blog_id_required')
-    //             };
-    //         }
-    //         const blogData = await common.get_blog_by_id(blog_id);
-    //         console.log("blogData1",blogData);
-    //         if (blogData.code !== response_code.SUCCESS || !blogData.data) {
-    //             return {
-    //                 code: response_code.NOT_FOUND,
-    //                 message: t('blog_not_found_or_deleted'),
-    //                 data: null
-    //             };
-    //         }
+            if (products && products != null && Array.isArray(products) && products.length > 0) {
+                return {
+                    code: response_code.SUCCESS,
+                    message: "Products Found",
+                    data: products
+                }
 
-    //         const update_data = {};
+            } else {
+                return {
+                    code: response_code.NOT_FOUND,
+                    message: "Products Not Found",
+                    data: null
+                }
+            }
 
-    //         if(title){
-    //             update_data.title = title;
-    //         }
-    //         if(content){
-    //             update_data.content = content;
-    //         }
-    //         if (status !== undefined && status !== null) { 
-    //             update_data.status = status;
-    //         }
-    //         console.log("update_data",update_data)
-    //         if(Object.keys(update_data).length === 0) {
-    //             return {
-    //                 code: response_code.BAD_REQUEST,
-    //                 message: t('no_update_data_provided')
-    //             };
-    //         }
-
-    //         await database.query('UPDATE tbl_blog SET ? WHERE blog_id = ?', [update_data, blog_id]);
-
-    //         return {
-    //             code: response_code.SUCCESS,
-    //             message: t('task_updated_successfully'),
-    //             data: { blog_id, ...update_data }
-    //         };
-    //     } catch (error) {
-    //         console.error("Error in updateBlog:", error);
-    //         return {
-    //             code: response_code.OPERATION_FAILED,
-    //             message: t('some_error_occurred'),
-    //             data: error.message
-    //         };
-    //     }
-    // }
-    
+        } catch (error) {
+            console.log(error.message);
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: "Internal Server Error",
+                data: null
+            }
+        }
 }
+
+async deleteProduct(request_data){
+    try{
+        if(!request_data.product_id){
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('no_product_id_provided'),
+                data: null
+            }
+        } else{
+            const data = await common.get_products_info(request_data.product_id);   
+            if(data){ 
+                const [res] = await database.query(`UPDATE tbl_products SET is_deleted = 1 where product_id = ?`, [request_data.product_id]);
+                if(res.affectedRows > 0){
+                    return {
+                        code: response_code.SUCCESS,
+                        message: t('delete_success'),
+                        data: request_data.product_id
+                    }
+                } else{
+                    return {
+                        code: response_code.OPERATION_FAILED,
+                        message: t('delete_failed'),
+                        data: null
+                    }
+                }
+            } else{
+                return {
+                    code: response_code.NOT_FOUND,
+                    message: t('product_already_deleted'),
+                    data: null
+                }
+            }
+        }
+
+    } catch(error){
+        console.log(error.message);
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: "Internal Server Error",
+                data: null
+            }
+    }
+}
+
+async showOrders(request_data) {
+    try {
+        let page = (request_data.page && request_data.page > 0) ? request_data.page : 1;
+        const limit = 10;
+        const start = (page - 1) * limit;
+
+        const [orders] = await database.query(`select o.order_id, o.order_num, o.sub_total, 
+        o.shipping_charge, o.grand_total, o.status, o.payment_type, u.full_name,
+        u.email_id, u.profile_pic, u.user_id, da.address_line, da.city, da.state, da.pincode, da.country from tbl_order o left join 
+        tbl_user u on o.user_id = u.user_id 
+        left join tbl_user_delivery_address da 
+        on da.address_id = o.address_id where u.is_deleted = 0 and da.is_deleted = 0 LIMIT ? OFFSET ?;`, [limit, start]);
+
+        if(orders && orders.length > 0){
+            return {
+                code: response_code.SUCCESS,
+                message: t('orders_found'),
+                data: orders
+            }
+
+        } else{
+            return {
+                code: response_code.NOT_FOUND,
+                message: t('no_orders_found'),
+                data: null
+            }
+        }
+
+    } catch (error) {
+        console.log(error.message);
+        return {
+            code: response_code.OPERATION_FAILED,
+            message: "Internal Server Error",
+            data: null
+        }
+    }
+}
+
+async updateStatus(request_data) {
+    try {
+        const order_data = await common.get_order_by_id(request_data.order_id);
+        if (order_data) {
+            if (request_data.status != order_data.status) {
+                const [updated_data] = await database.query(`UPDATE tbl_order SET status = ? where order_id = ?`, [request_data.status, request_data.order_id]);
+                if (updated_data.affectedRows > 0) {
+                    return {
+                        code: response_code.SUCCESS,
+                        message: t('order_status_update_success'),
+                        data: request_data.order_id
+                    }
+                } else {
+                    return {
+                        code: response_code.OPERATION_FAILED,
+                        message: t('failed_to_update_data'),
+                        data: null
+                    }
+                }
+            } else {
+                return {
+                    code: response_code.OPERATION_FAILED,
+                    message: t('provide_different_status_to_update'),
+                    data: null
+                }
+            }
+        } else {
+            return {
+                code: response_code.OPERATION_FAILED,
+                message: t('failed_to_get_order_detail'),
+                data: null
+            }
+        }
+
+    } catch (error) {
+        console.log(error.message);
+        return {
+            code: response_code.OPERATION_FAILED,
+            message: "Internal Server Error",
+            data: null
+        }
+    }
+}
+
+
+
+}
+    
+    
+    
+
+
+
 module.exports = new AdminModel();

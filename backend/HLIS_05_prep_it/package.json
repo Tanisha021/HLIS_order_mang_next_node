@@ -19,6 +19,7 @@
     "nodemailer": "^6.10.0",
     "Validator": "^1.1.4"
   },
+  
   "name": "hlis_basic_node_js_structure",
   "version": "1.0.0",
   "main": "app.js",
